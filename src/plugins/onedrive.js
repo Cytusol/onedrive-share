@@ -54,7 +54,7 @@ async function uploadTinyFile(file, path) {
 }
 async function uploadFile(file) {
   try {
-    let path = `SharedCytoidLevel/${Date.now()}-${file.name}`
+    let path = `onedrive-share/${Date.now()}/${file.name}`
     let ans = null;
     if (file.size > 4 * 1000 * 1000) {
       ans = await uploadLargeFile(file, path)
