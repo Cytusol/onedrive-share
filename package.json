@@ -8,7 +8,15 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@mdi/font": "^6.5.95",
+    "@vue/composition-api": "^1.4.6",
+    "@vueuse/core": "^7.6.2",
+    "axios": "^0.26.0",
     "core-js": "^3.8.3",
+    "crypto-js": "^4.1.1",
+    "pinia": "^2.0.11",
+    "pinia-plugin-persistedstate": "^1.2.2",
+    "typeface-roboto": "^1.1.13",
     "vite": "^2.8.4",
     "vite-plugin-components": "^0.13.3",
     "vite-plugin-vue2": "^1.9.3",
@@ -35,9 +43,6 @@
       "plugin:vue/essential",
       "eslint:recommended"
     ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
     "rules": {}
   },
   "browserslist": [

@@ -1,30 +1,31 @@
 import { defineStore } from "pinia";
-import { $fetch } from 'ohmyfetch'
-import deasync from "deasync";
+import axios from "axios";
 
 import sha256 from "crypto-js/sha256";
 import encBase64url from "crypto-js/enc-base64url";
+import { useLocalStorage } from "@vueuse/core";
 
 const azureData = {
-  'client_id': '94047eae-723e-43bd-ac33-b6353e98401f',
-  'redirect_uri': 'http://localhost:3000',
-  'client_secret': 'DG17Q~0wmCMiR2h0wtJ4bJZuGAK5llyQlPg8I',
+  'client_id': import.meta.env.VITE_MS_CLIENT_ID,
+  'redirect_uri': import.meta.env.VITE_MS_REDIRECT_URI,
+  'client_secret': import.meta.env.VITE_MS_CLIENT_SECRET,
   scope: 'openid offline_access https://graph.microsoft.com/Files.ReadWrite.AppFolder'
 }
 
 export const azureStore = defineStore({
   id: 'azure',
   state: () => ({
-    accessToken: '',
-    refreshToken: '',
-    timestamp: 0,
-    pkceData: {}
+    accessToken: useLocalStorage('accessToken', ''),
+    refreshToken: useLocalStorage('refreshToken', ''),
+    timestamp: useLocalStorage('timestamp', 0),
+    pkceData: useLocalStorage('pkceData', {})
   }),
   actions: {
-    async login(state) {
-      state.refreshToken = ''
-      state.accessToken = ''
-      state.pkceData = getPKCE()
+    async login() {
+      this.refreshToken = ''
+      this.accessToken = ''
+      this.timestamp = 0
+      this.pkceData = getPKCE()
 
       window.open((()=>{
         let params = new URLSearchParams({
@@ -33,61 +34,63 @@ export const azureStore = defineStore({
           redirect_uri: azureData.redirect_uri,
           response_mode: 'query',
           scope: azureData.scope,
-          code_challenge: state.pkceData.code_challenge,
-          code_challenge_method: state.pkceData.code_challenge_method,
+          code_challenge: this.pkceData.code_challenge,
+          code_challenge_method: this.pkceData.code_challenge_method,
         })
         return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`
       })())
       window.addEventListener('storage', async () => {
-        await regToken()
+        await (async ()=>{
+          let code = localStorage.code
+          localStorage.removeItem('code')
+          try {
+            let tokens = await getToken(code, this.pkceData.code_verifier)
+            this.accessToken = tokens.access
+            this.refreshToken = tokens.refresh
+            this.timestamp = tokens.expires * 1000 + (new Date().getTime())
+            // console.log(this.timestamp)
+            return true
+          } catch (error) {
+            console.error(error)
+            return false
+          }
+        })();
       }, {once: true});
 
-      async function regToken() {
-        let code = localStorage.code
-        localStorage.removeItem('code')
-        try {
-          let tokens = await getToken(code, state.pkceData.code_verifier)
-          state.accessToken = tokens.access
-          state.refreshToken = tokens.refresh
-          state.timestamp = tokens.expires * 1000 + (new Date().getTime())
-          console.log(state.timestamp)
-          return true
-        } catch (error) {
-          console.log(error)
-          return false
-        }
-      }
     },
-    logout(state) {
-      state.refreshToken = ''
-      state.accessToken = ''
+    logout() {
+      this.refreshToken = ''
+      this.accessToken = ''
+      this.timestamp = 0
     },
-    async refresh(state) {
+    async refresh() {
       try {
-        let tokens = await refresh(state.refreshToken)
-        state.accessToken = tokens.access
-        state.refreshToken = tokens.refresh
-        state.timestamp = tokens.expires * 1000 + (new Date().getTime())
-        console.log(state.timestamp)
+        let tokens = await refresh(this.refreshToken)
+        this.accessToken = tokens.access
+        this.refreshToken = tokens.refresh
+        this.timestamp = tokens.expires * 1000 + (new Date().getTime())
+        // console.log(this.timestamp)
         return true
       } catch (error) {
-        console.log(error)
+        console.error(error)
         return false
       }
     },
-    async token(state) {
-      if (state.timestamp < (new Date()).getTime()) {
-        await state.refresh()
+    async getToken() {
+      if (this.timestamp < (new Date()).getTime()) {
+        await this.refresh()
       }
-      return state.accessToken
+      return this.accessToken
     }
   },
   getters: {
-  },
-  // persist: import.meta.env.PROD ? {
-  //   key: 'theKey'
-  // } : true,
-  persist: true
+    isExpired() {
+      return this.timestamp < (new Date()).getTime()
+    },
+    isLogined() {
+      return this.timestamp > 1000
+    }
+  }
 })
 
 async function getToken(code, code_verifier) {
@@ -100,13 +103,15 @@ async function getToken(code, code_verifier) {
     "code_verifier": code_verifier,
     // 'client_secret': azureData.client_secret
   }
-  let ans = await $fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+  let ans = (await axios({
+    url: `https://login.microsoftonline.com/common/oauth2/v2.0/token`, 
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams(data)
-  });
+    data: new URLSearchParams(data)
+  })).data;
+  // console.log(ans)
   return {
     access: ans.access_token,
     refresh: ans.refresh_token,
@@ -122,13 +127,14 @@ async function refresh(refreshToken) {
     'grant_type': 'refresh_token'
     // 'client_secret': azureData.client_secret
   }
-  let ans = await $fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+  let ans = (await axios({
+    url: `https://login.microsoftonline.com/common/oauth2/v2.0/token`, 
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams(data)
-  });
+    data: new URLSearchParams(data)
+  })).data;
   return {
     access: ans.access_token,
     refresh: ans.refresh_token,
