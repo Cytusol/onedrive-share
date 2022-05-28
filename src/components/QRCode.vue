@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="dialog" persistent max-width="290">
     <template v-slot:activator="{ on, attrs }">
-      <v-btn text v-bind="attrs" v-on="on">
+      <v-btn text v-bind="attrs" v-on="on" @click="getQRCode(value)">
         显示二维码
       </v-btn>
     </template>
@@ -36,9 +36,10 @@ export default {
       this.dataUrl = await QRCode.toDataURL(str);
     }
   },
-  mounted: function() {
-    this.getQRCode(this.value)
-  }
+  // mounted: function() {
+  //   this.getQRCode(this.value)
+  //   console.log(this.value)
+  // }
 };
 </script>
 

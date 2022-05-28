@@ -38,7 +38,7 @@
                 <v-card-actions>
                   <v-btn color="error" @click="azure.logout" text>注销</v-btn>
                   <v-spacer />
-                  <v-btn color="primary" @click="upload">
+                  <v-btn color="primary" :disabled="file == null" @click="upload">
                     上传
                   </v-btn>
                 </v-card-actions>
@@ -74,7 +74,6 @@
                     readonly
                     class="m-5"
                     v-model="shareUrl"
-                    :loading="appState.uploadProgress < 101"
                     :color="this.copyed? 'green' : null"
                     append-outer-icon="mdi-content-copy"
                     @click:append-outer="copySharedUrl()"
