@@ -92,6 +92,7 @@
                 <v-card-actions>
                   <v-btn text>继续上传</v-btn>
                   <v-spacer />
+                  <QRCode :value="shareUrl" />
                   <v-btn color="primary" @click="copySharedUrl">
                     复制链接
                   </v-btn>
@@ -113,14 +114,16 @@ import shareFile from "@/plugins/onedrive"
 
 import AppBar from './components/AppBar.vue';
 import SideBar from './components/SideBar.vue';
+import QRCode from './components/QRCode.vue';
 
 export default {
   name: 'App',
 
   components: {
     AppBar,
-    SideBar
-  },
+    SideBar,
+    QRCode
+},
 
   data: () => ({
     file: null,
