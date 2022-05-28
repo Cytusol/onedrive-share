@@ -140,6 +140,8 @@ export default {
           localStorage.code = params.get("code")
           window.close()
         }
+      } else {
+        this.azure.refresh()
       }
     },
     async upload() {

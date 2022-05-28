@@ -73,6 +73,7 @@ export const azureStore = defineStore({
         return true
       } catch (error) {
         console.error(error)
+        this.logout()
         return false
       }
     },
